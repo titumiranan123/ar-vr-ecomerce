@@ -1,0 +1,14 @@
+import type { SVGProps } from "react";
+type Props = SVGProps<SVGSVGElement>;
+const base = { width: 24, height: 24, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+export const SearchIcon = (p: Props) => <svg {...base} {...p}><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>;
+export const BagIcon = (p: Props) => <svg {...base} {...p}><path d="M6 8h12l1 12H5L6 8Z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/></svg>;
+export const ArrowIcon = (p: Props) => <svg {...base} {...p}><path d="M5 12h14M14 7l5 5-5 5"/></svg>;
+export const CubeIcon = (p: Props) => <svg {...base} {...p}><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4.5 7.8 7.5 4.3 7.5-4.3M12 12v9"/></svg>;
+export const HeadsetIcon = (p: Props) => <svg {...base} {...p}><path d="M4 7h16l2 9a2 2 0 0 1-3 2l-4-3H9l-4 3a2 2 0 0 1-3-2l2-9Z"/><path d="M8 11v3M6.5 12.5h3M16 12.5h.01M18 11.5h.01"/></svg>;
+export const HeartIcon = (p: Props) => <svg {...base} {...p}><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.7-7.5 1.1-1.1a5.5 5.5 0 0 0 0-7.8Z"/></svg>;
+export const MenuIcon = (p: Props) => <svg {...base} {...p}><path d="M4 7h16M4 12h16M4 17h16"/></svg>;
+export const CloseIcon = (p: Props) => <svg {...base} {...p}><path d="m6 6 12 12M18 6 6 18"/></svg>;
+export const ShieldIcon = (p: Props) => <svg {...base} {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>;
+export const TruckIcon = (p: Props) => <svg {...base} {...p}><path d="M3 6h11v11H3zM14 10h4l3 3v4h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>;
+export const LeafIcon = (p: Props) => <svg {...base} {...p}><path d="M20 4C10 4 4 9 4 16c0 2 1 4 3 4 7 0 12-6 13-16Z"/><path d="M5 19c3-5 7-8 12-11"/></svg>;

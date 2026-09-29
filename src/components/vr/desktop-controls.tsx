@@ -1,0 +1,7 @@
+import { OrbitControls } from "@react-three/drei";
+import { useFrame, useThree } from "@react-three/fiber";
+import { useEffect, useRef } from "react";
+import { Vector3 } from "three";
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
+
+export function DesktopControls({enabled=true}:{enabled?:boolean}){const keys=useRef(new Set<string>());const controls=useRef<OrbitControlsImpl>(null);const {camera}=useThree();useEffect(()=>{const down=(event:KeyboardEvent)=>keys.current.add(event.code);const up=(event:KeyboardEvent)=>keys.current.delete(event.code);window.addEventListener("keydown",down);window.addEventListener("keyup",up);return()=>{window.removeEventListener("keydown",down);window.removeEventListener("keyup",up)}},[]);useFrame((_,delta)=>{if(!enabled||!controls.current)return;const forward=new Vector3();camera.getWorldDirection(forward);forward.y=0;forward.normalize();const right=new Vector3().crossVectors(forward,camera.up).normalize();const move=new Vector3();if(keys.current.has("KeyW"))move.add(forward);if(keys.current.has("KeyS"))move.sub(forward);if(keys.current.has("KeyD"))move.add(right);if(keys.current.has("KeyA"))move.sub(right);if(move.lengthSq()){move.normalize().multiplyScalar(delta*2.6);camera.position.add(move);controls.current.target.add(move);controls.current.update()}});return <OrbitControls ref={controls} enabled={enabled} makeDefault target={[0,1,-1.2]} enableDamping dampingFactor={.08} minDistance={1.2} maxDistance={10} maxPolarAngle={Math.PI/2.03}/>}
