@@ -1,0 +1,10 @@
+[
+  {"id":"warm-modern","name":"Warm Modern","styleTags":["modern","luxury"],"wall":"#f1eee8","accentWall":"#d8cbbb","floor":"#b99570","rug":"#d9c4a6","accent":"#4d5960"},
+  {"id":"soft-scandi","name":"Soft Scandi","styleTags":["scandi","minimal"],"wall":"#f7f5ef","accentWall":"#e4dfd3","floor":"#d4bd9e","rug":"#e9dfcf","accent":"#71816d"},
+  {"id":"urban-ink","name":"Urban Ink","styleTags":["industrial","modern"],"wall":"#dedbd5","accentWall":"#a5a29b","floor":"#77716a","rug":"#555b61","accent":"#bf8b4e"},
+  {"id":"classic-cream","name":"Classic Cream","styleTags":["classic","luxury"],"wall":"#f2e9dc","accentWall":"#d9c3aa","floor":"#9c7353","rug":"#d3b38e","accent":"#725445"},
+  {"id":"sage-retreat","name":"Sage Retreat","styleTags":["scandi","classic"],"wall":"#eeeae1","accentWall":"#b9c4b0","floor":"#c6a681","rug":"#d5d0b9","accent":"#6f7d66"},
+  {"id":"blue-study","name":"Blue Study","styleTags":["modern","minimal"],"wall":"#e9edf0","accentWall":"#b7c9d1","floor":"#aa8667","rug":"#aebdc1","accent":"#304e62"},
+  {"id":"terracotta","name":"Terracotta Calm","styleTags":["classic","modern"],"wall":"#f4ece4","accentWall":"#d9a48a","floor":"#bd906b","rug":"#d6b09a","accent":"#765244"},
+  {"id":"monochrome","name":"Monochrome","styleTags":["minimal","industrial"],"wall":"#eeeeec","accentWall":"#c8c8c4","floor":"#9d9b96","rug":"#585b5b","accent":"#262a2c"}
+]
