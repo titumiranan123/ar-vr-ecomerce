@@ -181,7 +181,7 @@ export function ArViewer({ product }: { product: Product }) {
     <main className="min-h-dvh bg-[#0b0d12] text-white">
       <header className="flex h-20 items-center justify-between border-b border-white/10 px-5 sm:px-8">
         <Link href="/" className="text-lg font-semibold tracking-[.3em]">
-          VISTARA
+          NESTT
           <span className="block text-[6px] tracking-[.22em] text-white/45">AUGMENTED REALITY</span>
         </Link>
         <Link href={`/products/${product.slug}`} className="grid h-10 w-10 place-items-center rounded-full border border-white/20 text-xl" aria-label="Close AR viewer">

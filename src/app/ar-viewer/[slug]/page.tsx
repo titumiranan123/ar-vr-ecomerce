@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const product = products.find((item) => item.slug === slug);
   return {
-    title: product ? `View ${product.name} in AR | Vistara` : "AR Viewer | Vistara",
+    title: product ? `View ${product.name} in AR | NESTT` : "AR Viewer | NESTT",
     description: product ? `Place ${product.name} at true scale in your room.` : "View furniture in augmented reality.",
   };
 }

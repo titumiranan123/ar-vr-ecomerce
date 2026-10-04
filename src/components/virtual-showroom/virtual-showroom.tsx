@@ -44,7 +44,7 @@ export function VirtualShowroom() {
     </Canvas>
 
     <header className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-between border-b border-white/10 bg-slate-950/35 px-5 py-4 backdrop-blur-md sm:px-10">
-      <Link href="/" className="pointer-events-auto text-sm font-bold tracking-[.28em]">VISTARA<span className="ml-2 text-[9px] font-normal tracking-[.18em] text-white/45">VIRTUAL SHOWROOM</span></Link>
+      <Link href="/" className="pointer-events-auto text-sm font-bold tracking-[.28em]">NESTT<span className="ml-2 text-[9px] font-normal tracking-[.18em] text-white/45">VIRTUAL SHOWROOM</span></Link>
       <div className="pointer-events-auto flex items-center gap-2"><button onClick={() => void document.documentElement.requestFullscreen?.()} className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-xs font-semibold hover:bg-white/10">Fullscreen</button><Link href="/" className="grid h-9 w-9 place-items-center rounded-full border border-white/20 text-xl text-white/75">×</Link></div>
     </header>
 

@@ -65,7 +65,7 @@ export function VrControlPanel({
         <meshStandardMaterial color="#10131b" transparent opacity={0.96} roughness={0.65} />
       </mesh>
       <Text position={[-0.7, 0.32, 0.035]} fontSize={0.07} color="#69e8f1" anchorX="left">
-        VISTARA VR
+        NESTT VR
       </Text>
       <Text position={[-0.7, 0.16, 0.035]} fontSize={0.105} maxWidth={1.35} color="white" anchorX="left">
         {selected?.name ?? "Select a furniture piece"}

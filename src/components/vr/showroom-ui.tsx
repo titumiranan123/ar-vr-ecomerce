@@ -11,7 +11,7 @@ type Props = {
 export function ShowroomUi({ selected, onClose, onEnterVr, onExitVr, isPresenting, onRotateLeft, onRotateRight, onResetSelected, onResetAll, vrSupported, status }: Props) {
   return <div className="pointer-events-none absolute inset-0 z-10 text-white">
     <header className="pointer-events-auto flex items-center justify-between border-b border-white/10 bg-black/35 px-5 py-4 backdrop-blur-md sm:px-8">
-      <Link href="/" className="text-lg font-semibold tracking-[.3em]">VISTARA<span className="block text-[6px] tracking-[.22em] text-white/45">IMMERSIVE SHOWROOM</span></Link>
+      <Link href="/" className="text-lg font-semibold tracking-[.3em]">NESTT<span className="block text-[6px] tracking-[.22em] text-white/45">IMMERSIVE SHOWROOM</span></Link>
       <div className="flex items-center gap-2 sm:gap-3">
         <button onClick={onResetAll} className="rounded-full border border-white/20 bg-black/30 px-4 py-2.5 text-xs font-semibold text-white/75 hover:bg-white/10">Reset room</button>
         <button onClick={isPresenting ? onExitVr : onEnterVr} disabled={vrSupported === false} className="rounded-full bg-gradient-to-r from-[#6c46ff] to-[#16bfd6] px-5 py-2.5 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-45">

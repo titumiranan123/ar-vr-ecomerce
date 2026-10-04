@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Vistara | Furniture Beyond Space",
+  title: "NESTT | Furniture Beyond Space",
   description: "Discover premium furniture and preview every piece in AR and VR.",
 };
 

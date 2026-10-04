@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 const matterportSampleUrl = "https://my.matterport.com/show/?m=UoYSVEXV1GQ";
 
 export const metadata: Metadata = {
-  title: "Matterport Demo | Vistara",
-  description: "Explore a Matterport sample space inside the Vistara demo.",
+  title: "Matterport Demo | NESTT",
+  description: "Explore a Matterport sample space inside the NESTT demo.",
 };
 
 export default function MatterportPage() {
@@ -13,7 +13,7 @@ export default function MatterportPage() {
       <header className="flex items-center justify-between gap-6 border-b border-white/10 px-5 py-4 sm:px-8">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-cyan-300">
-            Vistara demo
+            NESTT demo
           </p>
           <h1 className="mt-1 text-xl font-semibold tracking-tight sm:text-2xl">
             Matterport Virtual Showroom
