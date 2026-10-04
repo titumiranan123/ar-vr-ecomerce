@@ -1,125 +1,120 @@
 "use client";
 
-import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Stage, useGLTF } from "@react-three/drei";
+import { Canvas, useThree } from "@react-three/fiber";
+import { OrbitControls, useGLTF } from "@react-three/drei";
 import Link from "next/link";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import type { ThreeEvent } from "@react-three/fiber";
+import type { Object3D } from "three";
 
-type Item = { id: string; type: string; name: string; model: string; position: [number, number, number]; rotation: number; scale: number };
-type CatalogItem = Omit<Item, "id" | "position" | "rotation"> & { width: number; depth: number; category: string };
-type DesignSuggestion = { type: string; reason: string };
+type IconName = "sofa" | "roller" | "door" | "sparkle" | "search" | "rotate" | "trash" | "export" | "chevron" | "ruler";
+
+function Icon({ name, size = 22 }: { name: IconName; size?: number }) {
+  const common = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  if (name === "sofa") return <svg {...common}><path d="M5 12V9a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v3" /><path d="M4 17v-5a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v5" /><path d="M4 14h16v4H4zM7 18v2M17 18v2" /></svg>;
+  if (name === "roller") return <svg {...common}><path d="M4 8h11a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v3h1Z" /><path d="M17 6h3v5a2 2 0 0 1-2 2h-3" /><path d="M15 13v8M12 21h6" /></svg>;
+  if (name === "door") return <svg {...common}><path d="M5 21V4a1 1 0 0 1 1-1h11v18" /><path d="M5 21h15M14 12h.01" /></svg>;
+  if (name === "sparkle") return <svg {...common}><path d="m12 3-1.2 4.8L6 9l4.8 1.2L12 15l1.2-4.8L18 9l-4.8-1.2L12 3ZM19 14l-.6 2.4L16 17l2.4.6L19 20l.6-2.4L22 17l-2.4-.6L19 14ZM5 15l-.5 2L2 17.5l2.5.5L5 20l.5-2 2.5-.5-2.5-.5L5 15Z" /></svg>;
+  if (name === "search") return <svg {...common}><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 5 5" /></svg>;
+  if (name === "rotate") return <svg {...common}><path d="M4 9a8 8 0 1 1 1.4 7.5" /><path d="M4 4v5h5" /></svg>;
+  if (name === "trash") return <svg {...common}><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>;
+  if (name === "export") return <svg {...common}><path d="M12 3v12M8 7l4-4 4 4M5 13v7h14v-7" /></svg>;
+  if (name === "chevron") return <svg {...common}><path d="m9 5 7 7-7 7" /></svg>;
+  if (name === "ruler") return <svg {...common}><path d="m4 16 12-12 4 4L8 20H4v-4Z" /><path d="m12 8 4 4M9 11l2 2M6 14l2 2" /></svg>;
+  return null;
+}
+
+type Item = { id: string; type: string; name: string; model: string; position: [number, number, number]; rotation: number; scale: number; width: number; depth: number; category: string };
+type CatalogItem = Omit<Item, "id" | "position" | "rotation">;
+type Opening = { id: string; type: "window" | "door"; x: number };
 
 const catalog: CatalogItem[] = [
-  { type: "chair", name: "Aero Lounge Chair", model: "/models/modern-arm-chair.glb", scale: 1.1, width: 1.2, depth: 1.2, category: "chair" },
-  { type: "table", name: "Terra Coffee Table", model: "/models/wooden-table.glb", scale: 1.25, width: 1.8, depth: 1, category: "table" },
-  { type: "shelf", name: "Rye Display Shelf", model: "/models/wooden-shelves.glb", scale: 1.2, width: 1.4, depth: .6, category: "shelf" },
-  { type: "stool", name: "Ember Wooden Stool", model: "/models/wooden-stool.glb", scale: 1, width: .7, depth: .7, category: "chair" },
-  { type: "side-chair", name: "Luna Side Chair", model: "/models/plastic-chair.glb", scale: .9, width: 1, depth: 1, category: "chair" },
-  { type: "display", name: "Oak Display Wall", model: "/models/steel-shelves.glb", scale: 1, width: 1.4, depth: .6, category: "shelf" },
+  { type: "sofa", name: "Luna Sofa Set", model: "/models/modern-arm-chair.glb", scale: 1.15, width: 1.8, depth: 1.2, category: "Living Room" },
+  { type: "cushion", name: "Accent Cushion", model: "/models/wooden-stool.glb", scale: 0.5, width: 0.7, depth: 0.7, category: "Living Room" },
+  { type: "center-table", name: "Terra Center Table", model: "/models/wooden-table.glb", scale: 1.2, width: 1.8, depth: 1, category: "Living Room" },
+  { type: "divan", name: "Cloud Divan", model: "/models/modern-arm-chair.glb", scale: 1.25, width: 1.7, depth: 1.1, category: "Bedroom" },
+  { type: "shoe-rack", name: "Oak Shoe Rack", model: "/models/wooden-shelves.glb", scale: 1, width: 1.2, depth: 0.7, category: "Bedroom" },
+  { type: "dining-table", name: "Ridge Dining Table", model: "/models/wooden-table.glb", scale: 1.35, width: 2, depth: 1.2, category: "Dining" },
+  { type: "dining-chair", name: "Harbor Dining Chair", model: "/models/plastic-chair.glb", scale: 0.9, width: 0.9, depth: 0.9, category: "Dining" },
+  { type: "kitchen-rack", name: "Steel Kitchen Rack", model: "/models/steel-shelves.glb", scale: 1, width: 1.3, depth: 0.7, category: "Kitchen" },
+  { type: "stool", name: "Ember Stool", model: "/models/wooden-stool.glb", scale: 1.1, width: 0.7, depth: 0.7, category: "Smart Living" },
 ];
-const floors = ["#cfc4b2", "#8d7660", "#62676a", "#ddd8cf"];
 
-function interiorLayout(roomWidth: number, roomLength: number, roomItems: Item[]) {
-  const x = Math.min(1.65, roomWidth / 2 - 0.85);
-  const z = Math.min(2.25, roomLength / 2 - 0.8);
-  const positions: Record<string, [number, number, number]> = {
-    chair: [-x, 0, 0.15],
-    "side-chair": [x, 0, 0.15],
-    table: [0, 0, 0.25],
-    shelf: [0, 0, -z],
-    display: [x, 0, -z],
-    stool: [-x * 0.35, 0, 1.45],
+const categories = [
+  { id: "living", name: "Living Room", type: "Living Room", color: "from-[#b5c8ba] to-[#526d62]" },
+  { id: "bedroom", name: "Bedroom", type: "Bedroom", color: "from-[#b1c1cf] to-[#566979]" },
+  { id: "dining", name: "Dining", type: "Dining", color: "from-[#d9b88d] to-[#956d42]" },
+  { id: "kitchen", name: "Kitchen", type: "Kitchen", color: "from-[#cfccc3] to-[#817b70]" },
+  { id: "smart", name: "Smart Living", type: "Smart Living", color: "from-[#e3a8b5] to-[#9e5367]" },
+];
+
+const wallColors = ["#eeece7", "#d9e2df", "#cad7e4", "#e7d1b9", "#586451", "#a3b0c5", "#c6b4ac", "#d2d8e4"];
+const floorColors = ["#5a4032", "#515252", "#6c6257", "#b79464", "#928c7e", "#5f5148"];
+const presets = [
+  { name: "Warm Contemporary", wall: "#eeece7", floor: "#515252" },
+  { name: "Soft Scandinavian", wall: "#d9e2df", floor: "#b79464" },
+  { name: "Earthy Retreat", wall: "#e7d1b9", floor: "#5a4032" },
+];
+
+function arrangedItems(roomWidth: number, roomLength: number, items: Item[]) {
+  const x = Math.max(0.8, Math.min(1.65, roomWidth / 2 - 0.85));
+  const z = Math.max(0.8, Math.min(2.05, roomLength / 2 - 0.8));
+  const placements: Record<string, [number, number, number]> = {
+    sofa: [-x, 0, 0.15], cushion: [-x * 0.72, 0, 0.45], "center-table": [0, 0, 0.35], divan: [0, 0, -z], "shoe-rack": [x, 0, -z], "dining-table": [0, 0, -0.5], "dining-chair": [x, 0, 0.9], "kitchen-rack": [x, 0, -z], stool: [-x * 0.4, 0, 1.25],
   };
-  return roomItems.map((item, index) => ({
-    ...item,
-    position: positions[item.type] || [((index % 3) - 1) * 1.25, 0, Math.floor(index / 3) * 1.25 - 1],
-    rotation: item.type === "shelf" || item.type === "display" ? 0 : item.type === "table" ? 0 : Math.PI * 0.08,
-  }));
+  return items.map((item, index) => ({ ...item, position: placements[item.type] || [((index % 3) - 1) * 1.1, 0, Math.floor(index / 3) * 1.1 - 0.8] as [number, number, number] }));
 }
 
-function Product({ item, selected, onSelect, dragging, onDragStart }: { item: Item; selected: boolean; onSelect: () => void; dragging: boolean; onDragStart: () => void }) {
+function ProductModel({ item, selected, onSelect, onMove, onDragStart, onDragEnd }: { item: Item; selected: boolean; onSelect: () => void; onMove: (point: [number, number, number]) => void; onDragStart: () => void; onDragEnd: () => void }) {
   const { scene } = useGLTF(item.model);
-  const cloned = useMemo(() => scene.clone(), [scene]);
-  return <primitive object={cloned} position={item.position} rotation={[0, item.rotation, 0]} scale={item.scale} onClick={(event: { stopPropagation: () => void }) => { event.stopPropagation(); onSelect(); }} onPointerDown={(event: { stopPropagation: () => void }) => { event.stopPropagation(); onDragStart(); }} onPointerOver={() => { document.body.style.cursor = "grab"; }} onPointerOut={() => { document.body.style.cursor = "default"; }}>
-    {selected && <mesh position={[0, .05, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[.45, .5, 32]} /><meshBasicMaterial color="#22d3ee" transparent opacity={dragging ? .9 : .55} /></mesh>}
-  </primitive>;
+  const cloned = useMemo<Object3D>(() => scene.clone(true), [scene]);
+  return <group position={item.position} rotation={[0, item.rotation, 0]} scale={item.scale}><primitive object={cloned} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onSelect(); }} onPointerDown={(event: ThreeEvent<PointerEvent>) => { event.stopPropagation(); onSelect(); onDragStart(); }} onPointerUp={(event: ThreeEvent<PointerEvent>) => { event.stopPropagation(); onDragEnd(); }} onPointerOver={() => { document.body.style.cursor = "grab"; }} onPointerOut={() => { document.body.style.cursor = "default"; }} onPointerMove={(event: ThreeEvent<PointerEvent>) => { if (event.buttons === 1) { event.stopPropagation(); onMove([event.point.x, 0, event.point.z]); } }} />{selected && <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.55, 0.62, 40]} /><meshBasicMaterial color="#d52531" transparent opacity={0.85} /></mesh>}</group>;
 }
 
-function PlannerScene({ width, length, wallHeight, wallColor, floorColor, items, selected, setSelected, moveItem, dragging, setDragging }: { width: number; length: number; wallHeight: number; wallColor: string; floorColor: string; items: Item[]; selected: string | null; setSelected: (id: string | null) => void; moveItem: (point: [number, number, number]) => void; dragging: boolean; setDragging: (value: boolean) => void }) {
-  return <>
-    <ambientLight intensity={1.2} />
-    <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} onClick={(event) => { if (dragging) { moveItem([event.point.x, 0, event.point.z]); setDragging(false); } else setSelected(null); }} onPointerMove={(event) => { if (dragging) moveItem([event.point.x, 0, event.point.z]); }}><planeGeometry args={[width, length]} /><meshStandardMaterial color={floorColor} roughness={.82} /></mesh>
-      <mesh position={[0, wallHeight / 2, -length / 2]}><boxGeometry args={[width, wallHeight, .12]} /><meshStandardMaterial color={wallColor} /></mesh>
-      <mesh position={[-width / 2, wallHeight / 2, 0]}><boxGeometry args={[.12, wallHeight, length]} /><meshStandardMaterial color={wallColor} /></mesh>
-      <mesh position={[width / 2, wallHeight / 2, 0]}><boxGeometry args={[.12, wallHeight, length]} /><meshStandardMaterial color={wallColor} /></mesh>
-      {items.map((item) => <Product key={item.id} item={item} selected={item.id === selected} onSelect={() => setSelected(item.id)} dragging={dragging && item.id === selected} onDragStart={() => { setSelected(item.id); setDragging(true); }} />)}
-    </group>
-    <gridHelper args={[Math.max(width, length), Math.max(width, length) * 2, "#ffffff", "#ffffff"]} position={[0, .012, 0]} material-transparent material-opacity={.12} />
-    <OrbitControls makeDefault enablePan={!dragging} minDistance={3} maxDistance={18} target={[0, 0, 0]} />
-  </>;
+function OpeningModel({ opening, wallHeight }: { opening: Opening; wallHeight: number }) {
+  const width = opening.type === "door" ? 0.8 : 1.3;
+  const height = opening.type === "door" ? 2.2 : 1.2;
+  return <group position={[opening.x, opening.type === "door" ? height / 2 : wallHeight * 0.6, -2.5]}><mesh><boxGeometry args={[width, height, 0.09]} /><meshStandardMaterial color={opening.type === "door" ? "#6b4932" : "#9fc6d8"} roughness={0.35} /></mesh>{opening.type === "window" && <mesh position={[0, 0, 0.055]}><boxGeometry args={[width - 0.12, height - 0.12, 0.02]} /><meshStandardMaterial color="#d8f1f4" transparent opacity={0.7} /></mesh>}</group>;
 }
+
+function RoomScene({ width, length, wallHeight, wallColor, floorColor, items, selected, setSelected, moveItem, dragging, setDragging, openings }: { width: number; length: number; wallHeight: number; wallColor: string; floorColor: string; items: Item[]; selected: string | null; setSelected: (id: string | null) => void; moveItem: (point: [number, number, number]) => void; dragging: boolean; setDragging: (value: boolean) => void; openings: Opening[] }) {
+  const roomWidth = width / 2;
+  const roomLength = length / 2;
+  const scaledWallHeight = wallHeight * 0.35;
+  return <><color attach="background" args={["#e9eef7"]} /><ambientLight intensity={1.6} /><directionalLight position={[5, 10, 7]} intensity={2.6} color="#fff8ed" castShadow /><directionalLight position={[-4, 5, 1]} intensity={0.65} color="#c8d8ff" /><group><mesh rotation={[-Math.PI / 2, 0, 0]} onClick={(event) => { if (dragging && selected) { moveItem([event.point.x, 0, event.point.z]); setDragging(false); } else setSelected(null); }} onPointerMove={(event) => { if (dragging) moveItem([event.point.x, 0, event.point.z]); }}><planeGeometry args={[roomWidth, roomLength]} /><meshStandardMaterial color={floorColor} roughness={0.82} /></mesh><mesh position={[0, scaledWallHeight / 2, -roomLength / 2]}><boxGeometry args={[roomWidth, scaledWallHeight, 0.11]} /><meshStandardMaterial color={wallColor} roughness={0.88} /></mesh><mesh position={[roomWidth / 2, scaledWallHeight / 2, 0]}><boxGeometry args={[0.11, scaledWallHeight, roomLength]} /><meshStandardMaterial color={wallColor} roughness={0.9} /></mesh>{openings.map((opening) => <OpeningModel key={opening.id} opening={opening} wallHeight={scaledWallHeight} />)}{items.map((item) => <ProductModel key={item.id} item={item} selected={item.id === selected} onSelect={() => setSelected(item.id)} onDragStart={() => setDragging(true)} onDragEnd={() => setDragging(false)} onMove={moveItem} />)}</group><OrbitControls makeDefault enablePan={!dragging} minDistance={4} maxDistance={18} target={[0, 0, -0.45]} minPolarAngle={0.45} maxPolarAngle={1.45} /></>;
+}
+
+function CameraHint() { const { camera } = useThree(); useEffect(() => { camera.position.set(9.3, 6.9, 10.8); }, [camera]); return null; }
+
+function ColorSwatches({ colors, value, onChange, tile = false }: { colors: string[]; value: string; onChange: (color: string) => void; tile?: boolean }) { return <div className="grid grid-cols-4 gap-3">{colors.map((color, index) => <button key={`${color}-${index}`} aria-label={`Select ${color}`} onClick={() => onChange(color)} className={`h-[60px] border-2 transition ${value === color ? "border-[#df2b36] p-1" : "border-transparent"}`}><span className="block h-full w-full" style={{ backgroundColor: color, backgroundImage: tile ? "linear-gradient(135deg, rgba(255,255,255,.12) 25%, transparent 25%, transparent 50%, rgba(0,0,0,.12) 50%, rgba(0,0,0,.12) 75%, transparent 75%)" : undefined, backgroundSize: tile ? "16px 16px" : undefined }} /></button>)}</div>; }
+
+function CustomizePanel({ width, setWidth, length, setLength, wallHeight, setWallHeight, wallColor, setWallColor, floorColor, setFloorColor, preset, setPreset }: { width: number; setWidth: (value: number) => void; length: number; setLength: (value: number) => void; wallHeight: number; setWallHeight: (value: number) => void; wallColor: string; setWallColor: (value: string) => void; floorColor: string; setFloorColor: (value: string) => void; preset: string; setPreset: (value: string) => void }) {
+  const updatePreset = (name: string) => { const next = presets.find((item) => item.name === name); setPreset(name); if (next) { setWallColor(next.wall); setFloorColor(next.floor); } };
+  return <div className="space-y-7 pb-6"><section><SectionTitle icon="ruler">Floor Dimension</SectionTitle><DimensionInput label="Width" value={width} onChange={setWidth} /><DimensionInput label="Length" value={length} onChange={setLength} /><button className="mt-4 h-11 w-full rounded-full border border-[#e32634] text-sm font-medium text-[#e32634] transition hover:bg-[#e32634] hover:text-white">Resize</button></section><section><SectionTitle icon="ruler">Wall Height</SectionTitle><DimensionInput label="Height" value={wallHeight} onChange={setWallHeight} /><button className="mt-4 h-11 w-full rounded-full border border-[#e32634] text-sm font-medium text-[#e32634] transition hover:bg-[#e32634] hover:text-white">Resize</button></section><section><label className="mb-3 block text-[15px] font-semibold text-[#36404b]">Room Preset</label><div className="relative"><select value={preset} onChange={(event) => updatePreset(event.target.value)} className="h-10 w-full appearance-none rounded border border-[#d9dde3] bg-white px-3 text-sm text-[#42505d] outline-none focus:border-[#e32634]"><option>Select Preset</option>{presets.map((item) => <option key={item.name}>{item.name}</option>)}</select><span className="pointer-events-none absolute right-3 top-3 text-[#59636d]"><Icon name="chevron" size={15} /></span></div></section><section><label className="mb-3 block text-[15px] font-semibold text-[#36404b]">Wall Color</label><ColorSwatches colors={wallColors} value={wallColor} onChange={setWallColor} /><div className="mt-4 flex items-center gap-2"><span className="text-sm text-[#59636d]">Select Color</span><input aria-label="Custom wall color" type="color" value={wallColor} onChange={(event) => setWallColor(event.target.value)} className="ml-auto h-8 w-12 cursor-pointer border-0 bg-transparent" /></div></section><section><label className="mb-3 block text-[15px] font-semibold text-[#36404b]">Floor Type</label><ColorSwatches colors={floorColors} value={floorColor} onChange={setFloorColor} tile /><div className="mt-3 flex gap-2"><button onClick={() => setFloorColor("#6c6257")} className="h-8 flex-1 border border-[#d9dde3] bg-[#6c6257] text-xs text-white">Concrete</button><button onClick={() => setFloorColor("#b79464")} className="h-8 flex-1 border border-[#d9dde3] bg-[#b79464] text-xs text-white">Oak</button></div></section></div>;
+}
+
+function DimensionInput({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) { return <label className="mt-4 block text-sm font-medium text-[#47515b]">{label}<span className="mt-1 flex gap-3"><span className="relative flex h-10 min-w-0 flex-1 overflow-hidden rounded border border-[#d9dde3] bg-white"><input type="number" min="3" max="24" step="1" value={value} onChange={(event) => onChange(Math.max(3, Number(event.target.value) || 3))} className="min-w-0 flex-1 px-3 pt-2 text-sm outline-none" /><span className="pointer-events-none absolute left-3 top-0 text-[11px] text-[#68727c]">Feet</span></span><span className="relative flex h-10 min-w-0 flex-1 overflow-hidden rounded border border-[#d9dde3] bg-white"><input aria-label={`${label} inches`} type="number" min="0" max="11" value={0} readOnly className="min-w-0 flex-1 px-3 pt-2 text-sm outline-none" /><span className="pointer-events-none absolute left-3 top-0 text-[11px] text-[#68727c]">Inches</span></span></span></label>; }
+function SectionTitle({ icon, children }: { icon: IconName; children: React.ReactNode }) { return <h2 className="flex items-center gap-2 text-[15px] font-semibold text-[#36404b]"><Icon name={icon} size={18} />{children}</h2>; }
+
+function ItemsPanel({ itemSearch, setItemSearch, selectedCategory, setSelectedCategory, selectedProduct, setSelectedProduct, addItem }: { itemSearch: string; setItemSearch: (value: string) => void; selectedCategory: string | null; setSelectedCategory: (value: string | null) => void; selectedProduct: CatalogItem | null; setSelectedProduct: (value: CatalogItem | null) => void; addItem: (product: CatalogItem) => void }) {
+  if (selectedProduct) return <div><button onClick={() => setSelectedProduct(null)} className="mb-7 flex items-center gap-2 text-sm text-[#39444d] hover:text-[#df2b36]"><span className="text-xl">‹</span> Back</button><h2 className="mb-5 text-[22px] font-semibold text-[#35404a]">{selectedProduct.name}</h2><div className="rounded border border-[#e5e7eb] bg-white p-3"><div className="flex h-44 items-center justify-center rounded bg-gradient-to-br from-[#c8d0cf] to-[#667a72] text-white"><Icon name="sofa" size={74} /></div><div className="mt-4 flex items-center justify-between"><div><p className="text-sm font-semibold text-[#3a4650]">{selectedProduct.name}</p><p className="mt-1 text-xs text-[#7c858c]">Ready for your room</p></div><button onClick={() => addItem(selectedProduct)} className="grid h-9 w-9 place-items-center rounded bg-[#e32634] text-xl text-white">+</button></div></div></div>;
+  if (selectedCategory) { const category = categories.find((item) => item.id === selectedCategory); const products = catalog.filter((item) => item.category === category?.type && item.name.toLowerCase().includes(itemSearch.toLowerCase())); return <div><button onClick={() => { setSelectedCategory(null); setItemSearch(""); }} className="mb-7 flex items-center gap-2 text-sm text-[#39444d] hover:text-[#df2b36]"><span className="text-xl">‹</span> Back</button><h2 className="mb-5 text-[22px] font-semibold text-[#35404a]">{category?.name}</h2><div className="space-y-3">{products.map((product) => <button key={product.type} onClick={() => setSelectedProduct(product)} className="flex w-full items-center gap-3 border border-transparent bg-white p-2 text-left transition hover:border-[#e32634]"><span className="grid h-11 w-11 shrink-0 place-items-center rounded bg-[#ced8d0] text-[#4f665a]"><Icon name="sofa" size={26} /></span><span className="text-sm text-[#34404a]">{product.name}</span><span className="ml-auto text-xl text-[#9aa1a8]">›</span></button>)}</div></div>; }
+  const visibleCategories = categories.filter((category) => category.name.toLowerCase().includes(itemSearch.toLowerCase()));
+  return <div><h2 className="mb-5 text-[22px] font-semibold text-[#35404a]">Add Items</h2><div className="relative mb-6"><input value={itemSearch} onChange={(event) => setItemSearch(event.target.value)} placeholder="Search" className="h-11 w-full rounded border border-[#d9dde3] bg-white px-3 pr-11 text-sm outline-none focus:border-[#e32634]" /><span className="absolute right-3 top-3 text-[#34404a]"><Icon name="search" size={20} /></span></div><div className="space-y-3">{visibleCategories.map((category) => <button key={category.id} onClick={() => setSelectedCategory(category.id)} className="flex w-full items-center gap-3 border border-transparent bg-white p-2 text-left transition hover:border-[#e32634]"><span className="grid h-11 w-11 shrink-0 place-items-center rounded bg-[#ced8d0] text-[#4f665a]"><Icon name="sofa" size={27} /></span><span className="text-sm text-[#34404a]">{category.name}</span><span className="ml-auto text-xl text-[#9aa1a8]">›</span></button>)}</div></div>;
+}
+
+function OpeningsPanel({ openings, setOpenings }: { openings: Opening[]; setOpenings: (value: Opening[]) => void }) { const addOpening = (type: Opening["type"]) => setOpenings([...openings, { id: `${type}-${openings.length + 1}`, type, x: openings.length ? -1 + openings.length * 1.1 : 0 }]); return <div><h2 className="mb-5 text-[22px] font-semibold text-[#35404a]">Openings</h2><p className="mb-5 text-sm leading-6 text-[#747d85]">Add windows or doors to bring your room layout closer to the real space.</p><div className="space-y-3">{(["window", "door"] as const).map((type) => <button key={type} onClick={() => addOpening(type)} className="flex w-full items-center gap-3 border border-transparent bg-white p-3 text-left transition hover:border-[#e32634]"><span className="grid h-11 w-11 place-items-center rounded bg-[#d8d8d5] text-[#4b4039]"><Icon name={type === "door" ? "door" : "roller"} size={25} /></span><span className="text-sm capitalize text-[#34404a]">{type}</span><span className="ml-auto text-xl text-[#9aa1a8]">+</span></button>)}</div>{openings.length > 0 && <div className="mt-8 border-t border-[#e1e3e5] pt-5"><p className="mb-3 text-[11px] font-bold uppercase tracking-[.15em] text-[#899198]">In this room</p>{openings.map((opening) => <div key={opening.id} className="mb-2 flex items-center justify-between rounded bg-white px-3 py-2 text-sm capitalize text-[#48535c]"><span>{opening.type}</span><button aria-label={`Remove ${opening.type}`} onClick={() => setOpenings(openings.filter((item) => item.id !== opening.id))} className="text-[#b2b8be] hover:text-[#e32634]">×</button></div>)}</div>}</div>; }
 
 export function RoomPlanner() {
-  const [width, setWidth] = useState(6);
-  const [length, setLength] = useState(8);
-  const [wallHeight, setWallHeight] = useState(3);
-  const [wallColor, setWallColor] = useState("#f1eee8");
-  const [floorColor, setFloorColor] = useState(floors[0]);
-  const [items, setItems] = useState<Item[]>([]);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [dragging, setDragging] = useState(false);
-  const [arranging, setArranging] = useState(false);
-  const [message, setMessage] = useState("");
-  const [designStyle, setDesignStyle] = useState("");
-  const [suggestions, setSuggestions] = useState<DesignSuggestion[]>([]);
-  const addItem = (product: CatalogItem) => setItems((current) => { const existing = current.find((item) => item.type === product.type); if (existing) { setSelected(existing.id); return current; } const next = { ...product, id: `${product.type}-${Date.now()}`, position: [0, 0, 0] as [number, number, number], rotation: 0 }; const arranged = interiorLayout(width, length, [...current, next]); setSelected(next.id); return arranged; });
-  const reset = () => { setItems([]); setSelected(null); };
-  const rotate = (amount: number) => setItems((current) => current.map((item) => item.id === selected ? { ...item, rotation: item.rotation + amount } : item));
-  const remove = () => { setItems((current) => current.filter((item) => item.id !== selected)); setSelected(null); setSuggestions([]); };
-  const moveItem = (point: [number, number, number]) => setItems((current) => current.map((item) => item.id === selected ? { ...item, position: [Math.max(-width / 2 + .5, Math.min(width / 2 - .5, point[0])), 0, Math.max(-length / 2 + .5, Math.min(length / 2 - .5, point[2]))] } : item));
-  const arrangeWithGemini = async () => {
-    if (!items.length) { setMessage("Add products first."); return; }
-    setArranging(true); setMessage("");
-    try {
-      const prompt = `Return only JSON with style, wallColor, floorColor, lighting, placements and suggestions. Design a complete room ${width}m wide and ${length}m long using these selected furniture items. Keep them inside, do not overlap, leave walking space. placements must contain each exact id. Suggest up to 2 complementary types from chair, table, shelf, stool. Items: ${JSON.stringify(items)}`;
-      const response = await fetch(`${process.env.NEXT_PUBLIC_OLLAMA_URL || "http://localhost:11434"}/api/generate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: process.env.NEXT_PUBLIC_OLLAMA_MODEL || "gemma3:4b", prompt, stream: false, format: "json", options: { temperature: .3 } }), signal: AbortSignal.timeout(30000) });
-      const ollama = await response.json() as { response?: string };
-      const data = JSON.parse(ollama.response || "{}") as { placements?: Array<{ id: string; x: number; z: number; rotation: number }>; style?: string; wallColor?: string; floorColor?: string; suggestions?: DesignSuggestion[]; error?: string };
-      if (!response.ok || !data.placements) throw new Error(data.error || "AI offline - smart rules used");
-      if (data.wallColor) setWallColor(data.wallColor); if (data.floorColor) setFloorColor(data.floorColor); setDesignStyle(data.style || "Designed room"); setSuggestions(data.suggestions || []);
-      setItems((current) => {
-        const additions = (data.suggestions || []).map((suggestion) => catalog.find((product) => product.type === suggestion.type)).filter((product): product is CatalogItem => product !== undefined).filter((product) => !current.some((item) => item.type === product.type)).map((product) => ({ ...product, id: `${product.type}-${Date.now()}-${Math.random()}`, position: [0, 0, 0] as [number, number, number], rotation: 0 }));
-        const merged = [...current, ...additions];
-        return merged.map((item, index) => {
-          const placement = data.placements?.find((entry) => entry.id === item.id);
-          if (placement) return { ...item, position: [Math.max(-width / 2 + .5, Math.min(width / 2 - .5, placement.x)), 0, Math.max(-length / 2 + .5, Math.min(length / 2 - .5, placement.z))], rotation: placement.rotation };
-          return interiorLayout(width, length, merged)[index];
-        });
-      });
-      setMessage("Your room has been designed with the selected products.");
-    } catch { setItems((current) => interiorLayout(width, length, current)); setDesignStyle("Warm contemporary layout"); setMessage("AI unavailable — a complete smart interior layout was applied locally."); }
-    finally { setArranging(false); }
-  };
-
-  return <main className="flex h-dvh flex-col bg-[#f5f3ee] text-[#171717] lg:flex-row">
-    <aside className="z-10 w-full shrink-0 overflow-y-auto border-b border-black/10 bg-white p-5 lg:w-[330px] lg:border-b-0 lg:border-r lg:p-6">
-      <div className="flex items-center justify-between"><Link href="/" className="text-sm font-bold tracking-[.25em]">NESTT</Link><Link href="/" className="text-xl text-black/40">×</Link></div>
-      <p className="mt-8 text-[10px] font-bold uppercase tracking-[.2em] text-violet-600">3D room planner</p><h1 className="mt-2 text-3xl font-semibold tracking-tight">Make your space.</h1><p className="mt-2 text-sm leading-6 text-black/55">Set the room size, style the surfaces, then drag furniture into place.</p>
-      <div className="mt-7 grid grid-cols-2 gap-3"><label className="text-xs font-semibold">Width (m)<input type="number" min="3" max="15" step=".5" value={width} onChange={(event) => setWidth(Number(event.target.value))} className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2" /></label><label className="text-xs font-semibold">Length (m)<input type="number" min="3" max="15" step=".5" value={length} onChange={(event) => setLength(Number(event.target.value))} className="mt-1 w-full rounded-lg border border-black/15 px-3 py-2" /></label></div>
-      <label className="mt-4 block text-xs font-semibold">Wall height (m)<input type="range" min="2.4" max="5" step=".1" value={wallHeight} onChange={(event) => setWallHeight(Number(event.target.value))} className="mt-3 w-full accent-violet-600" /><span className="text-black/50">{wallHeight.toFixed(1)}m</span></label>
-      <div className="mt-6"><p className="text-xs font-bold uppercase tracking-[.15em] text-black/45">Wall colour</p><div className="mt-3 flex gap-2"><input type="color" value={wallColor} onChange={(event) => setWallColor(event.target.value)} className="h-9 w-12 cursor-pointer rounded border-0" /><span className="self-center text-xs text-black/50">{wallColor}</span></div></div>
-      <div className="mt-6"><p className="text-xs font-bold uppercase tracking-[.15em] text-black/45">Floor finish</p><div className="mt-3 flex gap-2">{floors.map((color) => <button key={color} aria-label={`Select floor ${color}`} onClick={() => setFloorColor(color)} className={`h-9 w-9 rounded-full border-2 ${floorColor === color ? "border-violet-600" : "border-white"}`} style={{ backgroundColor: color }} />)}</div></div>
-      <div className="mt-7 border-t border-black/10 pt-6"><div className="flex items-center justify-between"><p className="text-xs font-bold uppercase tracking-[.15em] text-black/45">Furniture</p><span className="text-xs text-black/40">{items.length} placed</span></div><div className="mt-3 grid grid-cols-2 gap-2">{catalog.map((product) => <button key={product.type} onClick={() => addItem(product)} className="rounded-xl border border-black/10 bg-[#faf9f6] p-3 text-left text-xs font-semibold transition hover:-translate-y-0.5 hover:border-violet-400"><span className="mb-2 block h-10 rounded-lg bg-gradient-to-br from-[#e9e3d8] to-[#c5b8a8]" />{product.name}<span className="mt-1 block text-[10px] font-normal text-black/45">Add to room +</span></button>)}</div></div>
-      {selected && <div className="mt-6 flex gap-2"><button onClick={() => rotate(-Math.PI / 8)} className="flex-1 rounded-lg border border-black/15 py-2 text-xs font-semibold">↶ Rotate</button><button onClick={() => rotate(Math.PI / 8)} className="flex-1 rounded-lg border border-black/15 py-2 text-xs font-semibold">Rotate ↷</button><button onClick={remove} className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600">Delete</button></div>}
-      <button onClick={reset} className="mt-6 w-full rounded-xl bg-[#181818] py-3 text-xs font-bold text-white">Reset room</button>
-      <button onClick={() => void arrangeWithGemini()} disabled={arranging || items.length === 0} className="mt-2 w-full rounded-xl bg-gradient-to-r from-violet-600 to-cyan-500 py-3 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">{arranging ? "Designing your room…" : "✦ Design my room with AI"}</button>
-      {message && <p className="mt-3 rounded-lg bg-black/[.04] px-3 py-2 text-center text-xs text-black/60">{message}</p>}
-      {designStyle && <div className="mt-4 rounded-xl border border-violet-100 bg-violet-50 p-3"><p className="text-[10px] font-bold uppercase tracking-[.15em] text-violet-600">AI design</p><p className="mt-1 text-sm font-semibold">{designStyle}</p></div>}
-      {suggestions.length > 0 && <div className="mt-4 rounded-xl border border-cyan-100 bg-cyan-50 p-3"><p className="text-[10px] font-bold uppercase tracking-[.15em] text-cyan-700">Suggested for your room</p>{suggestions.map((suggestion) => { const product = catalog.find((item) => item.type === suggestion.type); return product ? <button key={suggestion.type} onClick={() => addItem(product)} className="mt-2 block w-full rounded-lg bg-white p-2 text-left text-xs shadow-sm"><span className="font-bold">+ {product.name}</span><span className="mt-1 block text-[10px] text-black/50">{suggestion.reason}</span></button> : null; })}</div>}
-    </aside>
-    <section className="relative min-h-0 flex-1"><Canvas camera={{ position: [8, 7, 9], fov: 45 }} shadows dpr={[1, 1.5]}><Suspense fallback={null}><Stage environment="city" intensity={.65} shadows={{ type: "contact", opacity: .35, blur: 2 }}><PlannerScene width={width} length={length} wallHeight={wallHeight} wallColor={wallColor} floorColor={floorColor} items={items} selected={selected} setSelected={setSelected} moveItem={moveItem} dragging={dragging} setDragging={setDragging} /></Stage></Suspense></Canvas><div className="pointer-events-none absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full border border-black/10 bg-white/75 px-5 py-2 text-[11px] text-black/55 shadow-sm backdrop-blur-md">Drag furniture · Scroll to zoom · Click empty floor to deselect</div></section>
-  </main>;
+  const [width, setWidth] = useState(12); const [length, setLength] = useState(10); const [wallHeight, setWallHeight] = useState(8); const [wallColor, setWallColor] = useState(wallColors[0]); const [floorColor, setFloorColor] = useState(floorColors[1]); const [preset, setPreset] = useState("Select Preset");
+  const [items, setItems] = useState<Item[]>([]); const [selected, setSelected] = useState<string | null>(null); const [dragging, setDragging] = useState(false); const [openings, setOpenings] = useState<Opening[]>([]);
+  const [mode, setMode] = useState<"items" | "customize" | "openings">("customize"); const [panelOpen, setPanelOpen] = useState(true); const [itemSearch, setItemSearch] = useState(""); const [selectedCategory, setSelectedCategory] = useState<string | null>(null); const [selectedProduct, setSelectedProduct] = useState<CatalogItem | null>(null); const [notice, setNotice] = useState("");
+  const addItem = (product: CatalogItem) => { const next: Item = { ...product, id: `${product.type}-${Date.now()}`, position: [0, 0, 0], rotation: 0 }; setItems((current) => arrangedItems(width / 2, length / 2, [...current, next])); setSelected(next.id); setMode("items"); setSelectedCategory(null); setSelectedProduct(null); };
+  const rotateSelected = (amount: number) => setItems((current) => current.map((item) => item.id === selected ? { ...item, rotation: item.rotation + amount } : item));
+  const removeSelected = () => { setItems((current) => current.filter((item) => item.id !== selected)); setSelected(null); };
+  const moveItem = (point: [number, number, number]) => setItems((current) => current.map((item) => item.id === selected ? { ...item, position: [Math.max(-width / 4 + 0.45, Math.min(width / 4 - 0.45, point[0])), 0, Math.max(-length / 4 + 0.45, Math.min(length / 4 - 0.45, point[2]))] } : item));
+  const reset = () => { setItems([]); setSelected(null); setOpenings([]); };
+  return <main className="flex h-dvh min-h-[680px] overflow-hidden bg-[#e9eef7] text-[#34404a]"><aside className="z-20 flex w-[58px] shrink-0 flex-col items-center border-r border-[#e5e7ea] bg-white py-5"><Link href="/" className="mb-10 text-[14px] font-black tracking-[-.08em] text-[#e32634]">NESTT</Link><div className="flex flex-col items-center gap-4">{([ ["items", "sofa", "Items"], ["customize", "roller", "Customize"], ["openings", "door", "Openings"] ] as const).map(([id, icon, label]) => <button key={id} aria-label={label} onClick={() => { setMode(id); setSelectedCategory(null); setSelectedProduct(null); setItemSearch(""); }} className={`grid h-11 w-11 place-items-center rounded-full transition ${mode === id ? "bg-[#ffe5e6] text-[#e32634] shadow-[0_5px_15px_rgba(227,38,52,.12)]" : "text-[#5e6870] hover:bg-[#f2f3f4]"}`}><Icon name={icon} size={22} /></button>)}</div><button onClick={reset} className="mt-auto grid h-10 w-10 place-items-center rounded-full text-[#899198] hover:bg-[#f3f3f3]" aria-label="Reset room"><Icon name="rotate" size={18} /></button></aside>{panelOpen && <aside className="relative z-10 w-[350px] shrink-0 overflow-y-auto border-r border-[#e1e4e7] bg-[#f7f7f7] px-4 pb-8 pt-5 shadow-[4px_0_18px_rgba(60,70,80,.04)] sm:px-4"><div className="mb-6 flex items-center justify-between border-b border-[#dbdde0] pb-5"><h1 className="flex items-center gap-2 text-[19px] font-semibold text-[#35404a]">{mode === "customize" ? <><Icon name="sparkle" size={21} />Customize Your Room</> : mode === "items" ? "Add Items" : "Add Openings"}</h1><button onClick={() => setPanelOpen(false)} className="text-xl text-[#8b9297] hover:text-[#e32634]">×</button></div>{mode === "customize" && <CustomizePanel width={width} setWidth={setWidth} length={length} setLength={setLength} wallHeight={wallHeight} setWallHeight={setWallHeight} wallColor={wallColor} setWallColor={setWallColor} floorColor={floorColor} setFloorColor={setFloorColor} preset={preset} setPreset={setPreset} />}{mode === "items" && <ItemsPanel itemSearch={itemSearch} setItemSearch={setItemSearch} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} selectedProduct={selectedProduct} setSelectedProduct={setSelectedProduct} addItem={addItem} />}{mode === "openings" && <OpeningsPanel openings={openings} setOpenings={setOpenings} />}</aside>}{!panelOpen && <button onClick={() => setPanelOpen(true)} className="absolute left-[58px] top-1/2 z-20 grid h-28 w-8 -translate-y-1/2 place-items-center rounded-r-[28px] bg-white text-[#4d555d] shadow-[4px_2px_12px_rgba(40,45,50,.08)]"><span className="text-2xl">›</span></button>}<section className="relative min-w-0 flex-1"><div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-6 py-5 sm:px-9"><div className="flex items-center gap-4"><div className="bg-[#e32634] px-3 py-1 text-[28px] font-black tracking-[-.05em] text-white">NESTT</div><span className="hidden text-xs font-medium uppercase tracking-[.18em] text-[#7e8993] lg:inline">3D room studio</span></div><button onClick={() => { setNotice("Your room design is ready to export."); window.setTimeout(() => setNotice(""), 2600); }} className="flex items-center gap-2 rounded-full border border-[#e32634] bg-white/60 px-5 py-2.5 text-sm font-medium text-[#e32634] backdrop-blur transition hover:bg-[#e32634] hover:text-white"><Icon name="export" size={17} />Export</button></div><Canvas camera={{ position: [9.3, 6.9, 10.8], fov: 43 }} shadows dpr={[1, 1.5]}><Suspense fallback={null}><CameraHint /><RoomScene width={width} length={length} wallHeight={wallHeight} wallColor={wallColor} floorColor={floorColor} items={items} selected={selected} setSelected={setSelected} moveItem={moveItem} dragging={dragging} setDragging={setDragging} openings={openings} /></Suspense></Canvas><div className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full border border-black/10 bg-white/75 px-5 py-2.5 text-[11px] text-[#737c84] shadow-sm backdrop-blur-md">Drag furniture · Scroll to zoom · Click empty floor to deselect</div>{notice && <div className="absolute left-1/2 top-24 -translate-x-1/2 rounded-full bg-[#34404a] px-5 py-2.5 text-xs font-semibold text-white shadow-lg">{notice}</div>}{selected && <div className="absolute bottom-5 right-5 flex items-center gap-2 rounded-lg border border-[#dfe3e6] bg-white/90 p-2 shadow-lg backdrop-blur-md"><button onClick={() => rotateSelected(-Math.PI / 8)} className="grid h-9 w-9 place-items-center rounded text-[#56616a] hover:bg-[#f1f2f3]" aria-label="Rotate left"><Icon name="rotate" size={16} /></button><button onClick={() => rotateSelected(Math.PI / 8)} className="grid h-9 w-9 place-items-center rounded text-[#56616a] hover:bg-[#f1f2f3]" aria-label="Rotate right"><span className="text-lg">↻</span></button><button onClick={removeSelected} className="grid h-9 w-9 place-items-center rounded text-[#e32634] hover:bg-[#fff0f1]" aria-label="Remove selected item"><Icon name="trash" size={16} /></button></div>}</section></main>;
 }
 
 catalog.forEach((item) => useGLTF.preload(item.model));
